@@ -199,8 +199,31 @@ async function loadTicketDetail(ticketId, opts = {}) {
   }
 }
 
+let sessionTimerInterval = null;
+
+function stopSessionTimer() {
+  if (sessionTimerInterval) {
+    clearInterval(sessionTimerInterval);
+    sessionTimerInterval = null;
+  }
+}
+
+function formatElapsed(ms) {
+  const totalSeconds = Math.max(0, Math.floor(ms / 1000));
+  const h = Math.floor(totalSeconds / 3600);
+  const m = Math.floor((totalSeconds % 3600) / 60);
+  const s = totalSeconds % 60;
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${pad(h)}:${pad(m)}:${pad(s)}`;
+}
+
 function renderTicketHeader(ticket) {
+  stopSessionTimer();
   const el = document.getElementById('detailHeader');
+  const isRunning = ticket.has_running_session && ticket.running_session_start;
+  const durationBadge = isRunning
+    ? `<span class="badge badge-in_progress" id="liveSessionTimer">00:00:00</span>`
+    : `<span class="badge badge-done">${(ticket.total_duration || 0).toFixed(2)} h</span>`;
   el.innerHTML = `
     <h2>${escapeHtml(ticket.name)}</h2>
     <div class="meta">${escapeHtml(ticket.subject)}</div>
@@ -208,9 +231,27 @@ function renderTicketHeader(ticket) {
     <div class="tags">
       <span class="badge badge-${escapeAttr(ticket.state)}">${escapeHtml(stateLabel(ticket.state))}</span>
       ${ticket.support_type ? `<span class="badge badge-assigned">${escapeHtml(ticket.support_type)}</span>` : ''}
-      <span class="badge badge-done">${(ticket.total_duration || 0).toFixed(2)} h</span>
+      ${durationBadge}
     </div>
   `;
+
+  if (isRunning) {
+    // running_session_start is a UTC-naive "YYYY-MM-DD HH:MM:SS" string (Odoo
+    // convention) - explicitly treat it as UTC when parsing, otherwise the
+    // browser would interpret it as local time and the timer would be off by
+    // the local UTC offset.
+    const startMs = new Date(ticket.running_session_start.replace(' ', 'T') + 'Z').getTime();
+    const tick = () => {
+      const timerEl = document.getElementById('liveSessionTimer');
+      if (!timerEl) {
+        stopSessionTimer();
+        return;
+      }
+      timerEl.textContent = formatElapsed(Date.now() - startMs);
+    };
+    tick();
+    sessionTimerInterval = setInterval(tick, 1000);
+  }
 }
 
 function renderActions(ticket) {
@@ -270,10 +311,42 @@ async function onStart(ticketId) {
 
 function pickSupportMode() {
   return new Promise((resolve) => {
-    const mode = window.prompt('Support mode: type "online" or "onsite"', 'online');
-    if (!mode) return resolve(null);
-    const normalized = mode.trim().toLowerCase();
-    resolve(normalized === 'onsite' ? 'onsite' : 'online');
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    overlay.innerHTML = `
+      <div class="modal-box">
+        <h3>Support mode</h3>
+        <div class="radio-row" style="margin-top: 14px;">
+          <label class="radio-pill">
+            <input type="radio" name="esSupportMode" value="online" checked />
+            Online
+          </label>
+          <label class="radio-pill">
+            <input type="radio" name="esSupportMode" value="onsite" />
+            Onsite
+          </label>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn-secondary" id="smCancelBtn">Cancel</button>
+          <button type="button" class="btn-primary" id="smConfirmBtn">Start</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+
+    const close = (result) => {
+      document.body.removeChild(overlay);
+      resolve(result);
+    };
+
+    overlay.querySelector('#smCancelBtn').addEventListener('click', () => close(null));
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay) close(null);
+    });
+    overlay.querySelector('#smConfirmBtn').addEventListener('click', () => {
+      const checked = overlay.querySelector('input[name="esSupportMode"]:checked');
+      close(checked ? checked.value : 'online');
+    });
   });
 }
 
@@ -310,6 +383,9 @@ function showEndSessionModal() {
       </div>
     `;
     document.body.appendChild(overlay);
+    // Đưa focus vào ô note ngay khi modal mở - tránh trường hợp cửa sổ Electron
+    // chưa thực sự có bàn phím focus (vd sau khi vừa tương tác với DevTools).
+    setTimeout(() => overlay.querySelector('#esNote').focus(), 0);
 
     const close = (result) => {
       document.body.removeChild(overlay);
