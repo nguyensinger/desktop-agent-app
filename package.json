@@ -1,0 +1,32 @@
+{
+  "name": "it-support-desktop-agent-app",
+  "version": "1.0.0",
+  "description": "Desktop Agent App - app cho nhân viên IT support: nhận ticket, Start/End session, chat với khách hàng",
+  "main": "src/main.js",
+  "scripts": {
+    "start": "electron .",
+    "build:win": "electron-builder --win",
+    "build:mac": "electron-builder --mac"
+  },
+  "build": {
+    "appId": "com.yourcompany.itsupportagentapp",
+    "productName": "IT Support Agent App",
+    "win": {
+      "target": "nsis"
+    },
+    "mac": {
+      "target": "dmg"
+    },
+    "files": [
+      "src/**/*",
+      "package.json"
+    ]
+  },
+  "dependencies": {
+    "axios": "^1.18.0"
+  },
+  "devDependencies": {
+    "electron": "^32.3.3",
+    "electron-builder": "^26.15.3"
+  }
+}

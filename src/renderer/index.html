@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self';" />
+  <title>IT Support Agent App</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="app">
+    <header class="app-header">
+      <div class="brand">
+        <span class="brand-dot"></span>
+        <span>IT Support Agent</span>
+      </div>
+      <div class="header-right">
+        <span class="agent-name" id="agentNameLabel"></span>
+        <button id="btnLogout" class="icon-btn" title="Logout" style="display:none;">⏻</button>
+      </div>
+    </header>
+
+    <!-- ===== LOGIN ===== -->
+    <section id="loginPanel" class="panel">
+      <h2>Sign in</h2>
+      <p class="hint">Sign in with your personal API key to receive and handle support tickets.</p>
+
+      <label>Odoo server address</label>
+      <input id="loginBaseUrl" type="text" placeholder="http://10.0.2.2:8069 or http://192.168.x.x:8069" />
+
+      <label>API Key</label>
+      <input id="loginApiKey" type="password" placeholder="Your personal API key" />
+
+      <button id="btnLogin" class="btn-primary">Sign in</button>
+      <p class="error" id="loginError"></p>
+    </section>
+
+    <!-- ===== TICKET LIST ===== -->
+    <section id="listPanel" class="panel" style="display:none;">
+      <nav class="tabs" id="listTabs">
+        <button class="tab-btn active" data-tab="mine">My Tickets</button>
+        <button class="tab-btn" data-tab="unassigned">Unassigned</button>
+      </nav>
+      <div class="list-toolbar">
+        <button id="btnRefreshList" class="btn-secondary small">Refresh</button>
+      </div>
+      <div id="ticketListContainer" class="ticket-list"></div>
+    </section>
+
+    <!-- ===== TICKET DETAIL ===== -->
+    <section id="detailPanel" class="panel" style="display:none;">
+      <button id="btnBackToList" class="btn-secondary small">&larr; Back</button>
+      <div id="detailHeader"></div>
+      <div id="detailActions" class="row-inline"></div>
+      <div id="chatMessages" class="chat-messages"></div>
+      <div class="row-inline">
+        <input id="chatInput" type="text" placeholder="Type a message..." />
+        <button id="btnSendChat" class="btn-primary">Send</button>
+      </div>
+    </section>
+  </div>
+
+  <script src="renderer.js"></script>
+</body>
+</html>
