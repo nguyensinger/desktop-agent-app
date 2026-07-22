@@ -12,14 +12,24 @@ let currentTab = 'mine';
 let currentTicketId = null;
 let subscribedChannel = null;
 let unsubscribeRealtimeListener = null;
+let myAgentUserId = null;
 
 async function init() {
   bindEvents();
+  requestNotificationPermission();
   const config = await window.itSupportAgentApp.getConfig();
   if (config.odooBaseUrl && config.apiKey && config.agentName) {
     showList();
   } else {
     showLogin();
+  }
+}
+
+function requestNotificationPermission() {
+  // Xin quyền hiện thông báo desktop Windows 1 lần lúc khởi động app (không chặn
+  // luồng chính nếu bị từ chối - chỉ đơn giản là sẽ không hiện thông báo).
+  if (typeof Notification !== 'undefined' && Notification.permission === 'default') {
+    Notification.requestPermission().catch(() => {});
   }
 }
 
@@ -41,6 +51,7 @@ async function showList() {
   els.listPanel.style.display = 'block';
   const config = await window.itSupportAgentApp.getConfig();
   els.agentNameLabel.textContent = config.agentName || '';
+  myAgentUserId = config.agentUserId || null;
   els.btnLogout.style.display = 'inline-block';
   await subscribeDispatch();
   await loadTicketList();
@@ -78,6 +89,7 @@ function bindEvents() {
 
   if (!unsubscribeRealtimeListener) {
     unsubscribeRealtimeListener = window.itSupportAgentApp.onRealtimeEvent((data) => {
+      handleCustomerMessageNotifications(data.notifications);
       if (currentTicketId && data.channel === subscribedChannel) {
         loadTicketDetail(currentTicketId, { silent: true });
       } else if (!currentTicketId) {
@@ -85,6 +97,34 @@ function bindEvents() {
       }
     });
   }
+}
+
+// Quét notifications nhận từ long-polling để tìm event "khách vừa gửi tin nhắn"
+// (it_support_customer_message, phát trên dispatch channel - channel mọi agent
+// đang trực đều subscribe, kể cả khi đang ở màn hình danh sách). Chỉ hiện thông
+// báo cho đúng agent đang được assign ticket đó (hoặc mọi agent nếu ticket chưa
+// assign, khớp hành vi FCM hiện có cho mobile app).
+function handleCustomerMessageNotifications(notifications) {
+  if (!notifications || !notifications.length) return;
+  for (const notif of notifications) {
+    const msg = notif.message || {};
+    if (msg.type !== 'it_support_customer_message') continue;
+    const payload = msg.payload || {};
+    if (payload.agent_id && myAgentUserId && payload.agent_id !== myAgentUserId) continue;
+    if (currentTicketId && String(currentTicketId) === String(payload.ticket_id)) continue; // đang xem sẵn rồi
+    showCustomerMessageNotification(payload);
+  }
+}
+
+function showCustomerMessageNotification(payload) {
+  if (typeof Notification === 'undefined' || Notification.permission !== 'granted') return;
+  const n = new Notification(`💬 ${payload.ticket_name || 'New message'}`, {
+    body: `${payload.customer ? payload.customer + ': ' : ''}${payload.preview || ''}`,
+  });
+  n.onclick = async () => {
+    await window.itSupportAgentApp.focusWindow();
+    if (payload.ticket_id) showDetail(payload.ticket_id);
+  };
 }
 
 async function onLogin() {

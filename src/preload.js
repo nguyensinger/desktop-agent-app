@@ -24,6 +24,7 @@ contextBridge.exposeInMainWorld('itSupportAgentApp', {
   unsubscribeRealtime: () => ipcRenderer.invoke('realtime:unsubscribe'),
   getTicketChannel: (ticketId) => ipcRenderer.invoke('realtime:getTicketChannel', ticketId),
   getDispatchChannel: () => ipcRenderer.invoke('realtime:getDispatchChannel'),
+  focusWindow: () => ipcRenderer.invoke('app:focusWindow'),
   onRealtimeEvent: (callback) => {
     const handler = (event, data) => callback(data);
     ipcRenderer.on('realtime:event', handler);

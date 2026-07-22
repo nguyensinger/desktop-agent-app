@@ -166,3 +166,13 @@ ipcMain.handle('realtime:getDispatchChannel', async () => {
   const result = await api.getDispatchChannel();
   return result.channel;
 });
+
+ipcMain.handle('app:focusWindow', () => {
+  if (mainWindow) {
+    if (mainWindow.isMinimized()) mainWindow.restore();
+    mainWindow.show();
+    mainWindow.focus();
+  } else {
+    createWindow();
+  }
+});
