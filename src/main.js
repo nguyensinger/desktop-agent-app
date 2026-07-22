@@ -8,6 +8,15 @@ const path = require('path');
 const { getConfig, setConfig } = require('./config');
 const api = require('./api');
 
+// Windows yêu cầu app có AppUserModelID đăng ký để Action Center chịu hiện toast
+// notification - mặc định khi chạy dev (npm start / electron .) không có sẵn cái
+// này (chỉ có khi cài qua installer .exe có Start Menu shortcut), khiến
+// new Notification(...) tạo thành công nhưng Windows âm thầm không hiện gì cả,
+// không báo lỗi. Set thủ công ở đây giúp thông báo hiện được ngay cả ở dev mode.
+if (process.platform === 'win32') {
+  app.setAppUserModelId('com.vmtech.itsupportagentapp');
+}
+
 let mainWindow = null;
 let tray = null;
 
