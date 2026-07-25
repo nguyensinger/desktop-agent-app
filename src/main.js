@@ -31,7 +31,7 @@ function createWindow() {
     height: 760,
     minWidth: 420,
     minHeight: 600,
-    title: 'IT Support Agent App',
+    title: 'VM TECH Support Agent',
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
@@ -63,10 +63,10 @@ function createTray() {
     trayIcon = nativeImage.createEmpty();
   }
   tray = new Tray(trayIcon.isEmpty() ? nativeImage.createEmpty() : trayIcon);
-  tray.setToolTip('IT Support Agent App');
+  tray.setToolTip('VM TECH Support Agent');
 
   const contextMenu = Menu.buildFromTemplate([
-    { label: 'Open IT Support Agent', click: () => createWindow() },
+    { label: 'Open VM TECH Support Agent', click: () => createWindow() },
     { type: 'separator' },
     {
       label: 'Quit',
