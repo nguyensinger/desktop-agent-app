@@ -12,10 +12,12 @@
     "appId": "com.yourcompany.itsupportagentapp",
     "productName": "VM TECH Support Agent",
     "win": {
-      "target": "nsis"
+      "target": "nsis",
+      "icon": "assets/icon.ico"
     },
     "mac": {
-      "target": "dmg"
+      "target": "dmg",
+      "icon": "assets/icon.png"
     },
     "files": [
       "src/**/*",
