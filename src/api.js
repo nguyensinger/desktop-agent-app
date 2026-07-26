@@ -101,6 +101,14 @@ async function getDispatchChannel() {
   return callApi('/api/v1/dispatch_channel', {});
 }
 
+async function getBookingRequests() {
+  return callApi('/api/v1/booking/list', {});
+}
+
+async function createTicketFromBooking(bookingId) {
+  return callApi(`/api/v1/booking/${bookingId}/create_ticket`, {});
+}
+
 async function poll(channels, last = 0) {
   // Long-polling: request này có thể treo lại trên server vài chục giây
   // chờ có event mới, nên đặt timeout dài hơn các API khác.
@@ -120,4 +128,6 @@ module.exports = {
   getRealtimeChannel,
   getDispatchChannel,
   poll,
+  getBookingRequests,
+  createTicketFromBooking,
 };

@@ -53,6 +53,7 @@ async function showList() {
   els.agentNameLabel.textContent = config.agentName || '';
   myAgentUserId = config.agentUserId || null;
   els.btnLogout.style.display = 'inline-block';
+  document.getElementById('bookingsTabBtn').style.display = config.isManager ? '' : 'none';
   await subscribeDispatch();
   await loadTicketList();
 }
@@ -175,6 +176,11 @@ async function loadTicketList(opts = {}) {
   const container = document.getElementById('ticketListContainer');
   if (!opts.silent) container.innerHTML = '<p class="hint">Loading...</p>';
   try {
+    if (currentTab === 'bookings') {
+      const bookings = await window.itSupportAgentApp.getBookingRequests();
+      renderBookingList(bookings);
+      return;
+    }
     let tickets;
     if (currentTab === 'mine') {
       tickets = await window.itSupportAgentApp.getTickets({ mine: true });
@@ -185,6 +191,56 @@ async function loadTicketList(opts = {}) {
     renderTicketList(tickets);
   } catch (err) {
     container.innerHTML = `<p class="error">Error: ${err.message}</p>`;
+  }
+}
+
+// requested_start đến từ server là chuỗi UTC-naive "YYYY-MM-DD HH:MM:SS" (quy ước
+// Odoo) - ép kiểu UTC tường minh trước khi format, giống cách renderTicketHeader
+// xử lý running_session_start, để không bị lệch theo offset giờ local.
+function formatBookingTime(utcStr) {
+  if (!utcStr) return '';
+  const d = new Date(utcStr.replace(' ', 'T') + 'Z');
+  return d.toLocaleString(undefined, {
+    weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit',
+  });
+}
+
+function renderBookingList(bookings) {
+  const container = document.getElementById('ticketListContainer');
+  if (!bookings || bookings.length === 0) {
+    container.innerHTML = '<p class="hint">No pending booking requests.</p>';
+    return;
+  }
+  container.innerHTML = '';
+  bookings.forEach((b) => {
+    const contactLabel = b.company_name ? `${b.company_name} (${b.name})` : b.name;
+    const card = document.createElement('div');
+    card.className = 'ticket-card booking-card';
+    card.innerHTML = `
+      <div class="ticket-card-top">
+        <span class="ticket-card-name">${escapeHtml(formatBookingTime(b.requested_start))}</span>
+        <span class="badge badge-new">${escapeHtml(b.duration)}h</span>
+      </div>
+      <div class="ticket-card-subject">${escapeHtml(contactLabel)}</div>
+      <div class="ticket-card-customer">${escapeHtml(b.phone || '')}${b.email ? ' &middot; ' + escapeHtml(b.email) : ''}</div>
+      ${b.message ? `<div class="booking-message">${escapeHtml(b.message)}</div>` : ''}
+      <button type="button" class="btn-primary booking-confirm-btn">Confirm &amp; Create Ticket</button>
+    `;
+    card.querySelector('.booking-confirm-btn').addEventListener('click', () => onConfirmBooking(b.id));
+    container.appendChild(card);
+  });
+}
+
+async function onConfirmBooking(bookingId) {
+  if (!window.confirm('Confirm this booking and create a ticket for it?')) return;
+  try {
+    const result = await window.itSupportAgentApp.createTicketFromBooking(bookingId);
+    await loadTicketList();
+    if (result && result.ticket_id) {
+      showDetail(result.ticket_id);
+    }
+  } catch (err) {
+    alert(`Error: ${err.message}`);
   }
 }
 

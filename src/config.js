@@ -18,6 +18,7 @@ const DEFAULTS = {
   apiKey: '',
   agentUserId: null,
   agentName: '',
+  isManager: false,
 };
 
 function readConfig() {

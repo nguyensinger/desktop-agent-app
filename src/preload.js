@@ -25,6 +25,9 @@ contextBridge.exposeInMainWorld('itSupportAgentApp', {
   getTicketChannel: (ticketId) => ipcRenderer.invoke('realtime:getTicketChannel', ticketId),
   getDispatchChannel: () => ipcRenderer.invoke('realtime:getDispatchChannel'),
   focusWindow: () => ipcRenderer.invoke('app:focusWindow'),
+
+  getBookingRequests: () => ipcRenderer.invoke('booking:list'),
+  createTicketFromBooking: (bookingId) => ipcRenderer.invoke('booking:createTicket', bookingId),
   onRealtimeEvent: (callback) => {
     const handler = (event, data) => callback(data);
     ipcRenderer.on('realtime:event', handler);

@@ -102,12 +102,12 @@ ipcMain.handle('auth:login', async (event, { baseUrl, apiKey }) => {
       'Vui lòng liên hệ quản trị viên để được cấp quyền.'
     );
   }
-  setConfig({ agentUserId: who.user_id, agentName: who.name });
+  setConfig({ agentUserId: who.user_id, agentName: who.name, isManager: !!who.is_manager });
   return who;
 });
 
 ipcMain.handle('auth:logout', () => {
-  setConfig({ odooBaseUrl: '', apiKey: '', agentName: '', agentUserId: null });
+  setConfig({ odooBaseUrl: '', apiKey: '', agentName: '', agentUserId: null, isManager: false });
 });
 
 ipcMain.handle('ticket:list', async (event, opts) => api.getTickets(opts || {}));
@@ -176,6 +176,10 @@ ipcMain.handle('realtime:getDispatchChannel', async () => {
   const result = await api.getDispatchChannel();
   return result.channel;
 });
+
+ipcMain.handle('booking:list', async () => api.getBookingRequests());
+
+ipcMain.handle('booking:createTicket', async (event, bookingId) => api.createTicketFromBooking(bookingId));
 
 ipcMain.handle('app:focusWindow', () => {
   if (mainWindow) {
