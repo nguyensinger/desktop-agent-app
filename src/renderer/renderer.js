@@ -94,6 +94,7 @@ function bindEvents() {
     unsubscribeRealtimeListener = window.itSupportAgentApp.onRealtimeEvent((data) => {
       handleCustomerMessageNotifications(data.notifications);
       handleNewBookingNotifications(data.notifications);
+      handleTicketAssignedNotifications(data.notifications);
       if (currentTicketId && data.channel === subscribedChannel) {
         loadTicketDetail(currentTicketId, { silent: true });
       } else if (!currentTicketId) {
@@ -147,6 +148,31 @@ function showNewBookingNotification(payload) {
     currentTab = 'bookings';
     document.querySelectorAll('#listTabs .tab-btn').forEach((b) => b.classList.toggle('active', b.dataset.tab === 'bookings'));
     loadTicketList();
+  };
+}
+
+// Quét notifications tìm event "1 ticket vừa được gán cho mình" (Manager gán thủ
+// công, khác với tự "Assign to Me" - trường hợp đó agent đã biết sẵn nên backend
+// không bắn event này). Chỉ hiện cho đúng agent vừa được gán.
+function handleTicketAssignedNotifications(notifications) {
+  if (!notifications || !notifications.length) return;
+  for (const notif of notifications) {
+    const msg = notif.message || {};
+    if (msg.type !== 'it_support_ticket_assigned') continue;
+    const payload = msg.payload || {};
+    if (!myAgentUserId || payload.agent_id !== myAgentUserId) continue;
+    showTicketAssignedNotification(payload);
+  }
+}
+
+function showTicketAssignedNotification(payload) {
+  if (typeof Notification === 'undefined' || Notification.permission !== 'granted') return;
+  const n = new Notification(`🎫 ${payload.ticket_name || 'Ticket assigned to you'}`, {
+    body: payload.subject || '',
+  });
+  n.onclick = async () => {
+    await window.itSupportAgentApp.focusWindow();
+    if (payload.ticket_id) showDetail(payload.ticket_id);
   };
 }
 
