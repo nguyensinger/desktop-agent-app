@@ -13,6 +13,7 @@ let currentTicketId = null;
 let subscribedChannel = null;
 let unsubscribeRealtimeListener = null;
 let myAgentUserId = null;
+let myIsManager = false;
 
 async function init() {
   bindEvents();
@@ -52,6 +53,7 @@ async function showList() {
   const config = await window.itSupportAgentApp.getConfig();
   els.agentNameLabel.textContent = config.agentName || '';
   myAgentUserId = config.agentUserId || null;
+  myIsManager = !!config.isManager;
   els.btnLogout.style.display = 'inline-block';
   document.getElementById('bookingsTabBtn').style.display = config.isManager ? '' : 'none';
   await subscribeDispatch();
@@ -91,6 +93,7 @@ function bindEvents() {
   if (!unsubscribeRealtimeListener) {
     unsubscribeRealtimeListener = window.itSupportAgentApp.onRealtimeEvent((data) => {
       handleCustomerMessageNotifications(data.notifications);
+      handleNewBookingNotifications(data.notifications);
       if (currentTicketId && data.channel === subscribedChannel) {
         loadTicketDetail(currentTicketId, { silent: true });
       } else if (!currentTicketId) {
@@ -115,6 +118,36 @@ function handleCustomerMessageNotifications(notifications) {
     if (currentTicketId && String(currentTicketId) === String(payload.ticket_id)) continue; // đang xem sẵn rồi
     showCustomerMessageNotification(payload);
   }
+}
+
+// Quét notifications tìm event "có booking request mới từ website"
+// (it_support_new_booking, cùng dispatch channel với ticket mới - không cần
+// subscribe channel riêng). Chỉ hiện cho Manager, vì chỉ Manager mới thấy được
+// tab Bookings / có quyền gọi API booking.
+function handleNewBookingNotifications(notifications) {
+  if (!myIsManager || !notifications || !notifications.length) return;
+  for (const notif of notifications) {
+    const msg = notif.message || {};
+    if (msg.type !== 'it_support_new_booking') continue;
+    showNewBookingNotification(msg.payload || {});
+  }
+}
+
+function showNewBookingNotification(payload) {
+  if (typeof Notification === 'undefined' || Notification.permission !== 'granted') return;
+  const n = new Notification('📅 New Booking Request', {
+    body: payload.contact || 'A new booking request was submitted.',
+  });
+  n.onclick = async () => {
+    await window.itSupportAgentApp.focusWindow();
+    // Notification này chỉ có thể bắn ra khi đang ở màn hình danh sách (dispatch
+    // channel chỉ được subscribe ở đó, không phải lúc đang xem chi tiết 1 ticket)
+    // -> chỉ cần đổi tab + tải lại, không cần gọi lại showList() (tránh subscribe
+    // lại dispatch channel một cách thừa thãi).
+    currentTab = 'bookings';
+    document.querySelectorAll('#listTabs .tab-btn').forEach((b) => b.classList.toggle('active', b.dataset.tab === 'bookings'));
+    loadTicketList();
+  };
 }
 
 function showCustomerMessageNotification(payload) {
