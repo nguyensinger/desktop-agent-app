@@ -602,8 +602,15 @@ async function subscribeTicketChannel(ticketId) {
 }
 
 function stripHtml(htmlText) {
+  // Đổi <br>/</p> thành newline TRƯỚC khi lấy textContent, vì textContent bỏ hẳn các
+  // tag đó (không tự chèn \n), khiến tin nhắn nhiều dòng (vd tin chào tự động khi
+  // End User tạo ticket từ Desktop Client) bị dồn lại thành 1 dòng dài. Cần
+  // .chat-bubble có white-space: pre-wrap để \n thực sự hiển thị xuống dòng.
+  const withBreaks = (htmlText || '')
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<\/p>\s*<p[^>]*>/gi, '\n\n');
   const div = document.createElement('div');
-  div.innerHTML = htmlText || '';
+  div.innerHTML = withBreaks;
   return (div.textContent || div.innerText || '').trim();
 }
 
