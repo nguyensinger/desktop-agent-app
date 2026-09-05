@@ -31,7 +31,7 @@ function createWindow() {
     height: 760,
     minWidth: 420,
     minHeight: 600,
-    title: 'VM TECH Support Agent',
+    title: 'VM TECH Desktop Support',
     icon: path.join(__dirname, '..', 'assets', 'icon.png'),
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
@@ -64,10 +64,10 @@ function createTray() {
     trayIcon = nativeImage.createEmpty();
   }
   tray = new Tray(trayIcon.isEmpty() ? nativeImage.createEmpty() : trayIcon);
-  tray.setToolTip('VM TECH Support Agent');
+  tray.setToolTip('VM TECH Desktop Support');
 
   const contextMenu = Menu.buildFromTemplate([
-    { label: 'Open VM TECH Support Agent', click: () => createWindow() },
+    { label: 'Open VM TECH Desktop Support', click: () => createWindow() },
     { type: 'separator' },
     {
       label: 'Quit',
@@ -92,18 +92,20 @@ app.on('window-all-closed', (e) => {
 
 ipcMain.handle('config:get', () => getConfig());
 
-ipcMain.handle('auth:login', async (event, { baseUrl, apiKey }) => {
-  setConfig({ odooBaseUrl: baseUrl, apiKey });
-  const who = await api.whoami();
-  if (!who.is_agent && !who.is_manager) {
-    setConfig({ odooBaseUrl: '', apiKey: '', agentName: '', agentUserId: null });
-    throw new Error(
-      'Tài khoản này không thuộc nhóm IT Support Agent/Manager trên Odoo. ' +
-      'Vui lòng liên hệ quản trị viên để được cấp quyền.'
-    );
-  }
-  setConfig({ agentUserId: who.user_id, agentName: who.name, isManager: !!who.is_manager });
-  return who;
+ipcMain.handle('auth:login', async (event, { baseUrl, email, password }) => {
+  // /api/v1/agent/login đã tự kiểm tra email/password VÀ quyền Agent/Manager phía
+  // server - nếu gọi thành công (không throw) thì chắc chắn hợp lệ, không cần whoami()
+  // riêng nữa. Server trả luôn 1 API key mới, dùng cho mọi request sau này y hệt như
+  // khi dán tay 1 key có sẵn trước đây.
+  const result = await api.login(baseUrl, email, password);
+  setConfig({
+    odooBaseUrl: baseUrl,
+    apiKey: result.api_key,
+    agentUserId: result.user_id,
+    agentName: result.name,
+    isManager: !!result.is_manager,
+  });
+  return result;
 });
 
 ipcMain.handle('auth:logout', () => {

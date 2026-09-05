@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self';" />
-  <title>VM TECH Support Agent</title>
+  <title>VM TECH Desktop Support</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
@@ -11,7 +11,7 @@
     <header class="app-header">
       <div class="brand">
         <span class="brand-dot"></span>
-        <span>VM TECH Support Agent</span>
+        <span>VM TECH Desktop Support</span>
       </div>
       <div class="header-right">
         <span class="agent-name" id="agentNameLabel"></span>
@@ -22,13 +22,16 @@
     <!-- ===== LOGIN ===== -->
     <section id="loginPanel" class="panel">
       <h2>Sign in</h2>
-      <p class="hint">Sign in with your personal API key to receive and handle support tickets.</p>
+      <p class="hint">Sign in with your VM TECH account to receive and handle support tickets.</p>
 
       <label>VM TECH server address</label>
       <input id="loginBaseUrl" type="text" placeholder="http://10.0.2.2:8069 or http://192.168.x.x:8069" />
 
-      <label>API Key</label>
-      <input id="loginApiKey" type="password" placeholder="Your personal API key" />
+      <label>Email</label>
+      <input id="loginEmail" type="email" placeholder="you@vmtech.ca" autocomplete="username" />
+
+      <label>Password</label>
+      <input id="loginPassword" type="password" placeholder="Your password" autocomplete="current-password" />
 
       <button id="btnLogin" class="btn-primary">Sign in</button>
       <p class="error" id="loginError"></p>

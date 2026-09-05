@@ -1,4 +1,4 @@
-# IT Support Agent App (Desktop)
+# VM TECH Desktop Support
 
 Ứng dụng Electron dành cho **nhân viên IT support** (khác với **IT Support Desktop Client**,
 app cài trên máy khách hàng). Cho phép agent:
